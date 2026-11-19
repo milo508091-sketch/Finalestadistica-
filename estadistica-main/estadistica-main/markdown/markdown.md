@@ -1,8 +1,9 @@
-# Limpieza y Análisis Exploratorio de la Base de Datos de Restaurantes (USA)
+# Limpieza, Análisis Exploratorio y Modelos de Probabilidad de la Base de Datos de Restaurantes (USA)
 
 **Universidad Cooperativa de Colombia – Pasto**
 **Trabajo en equipo:** Andrés, Mora, Niko, Tefa y Camilo
 **Herramientas:** Python, pandas, NumPy, Matplotlib, Seaborn, SciPy (Google Colab)
+**Archivos:** `base_datos_restaurantes_USA_v2.csv` → `chicofiel.py` → `base_datos_restaurantes_LIMPIA.csv`
 
 ---
 
@@ -22,15 +23,33 @@
 7. [Exportación de la base limpia](#7-exportación-de-la-base-limpia)
 8. [Estadísticos de comparación y gráficos](#8-estadísticos-de-comparación-y-gráficos)
 9. [Resumen de decisiones de limpieza](#9-resumen-de-decisiones-de-limpieza)
-10. [Conclusiones](#10-conclusiones)
+10. [Conclusiones de la limpieza y el análisis exploratorio](#10-conclusiones-de-la-limpieza-y-el-análisis-exploratorio)
+11. [Fase II: Probabilidad](#11-fase-ii-probabilidad)
+    - [11.1 Fórmulas utilizadas](#111-fórmulas-utilizadas)
+    - [11.2 Resultados por ejercicio](#112-resultados-por-ejercicio)
+    - [11.3 Resumen de la Fase II](#113-resumen-de-la-fase-ii)
+    - [11.4 Conclusión de la Fase II](#114-conclusión-de-la-fase-ii)
+12. [Etapa 3: Modelos de probabilidad](#12-etapa-3-modelos-de-probabilidad)
+    - [12.1 Distribución uniforme (edad)](#121-distribución-uniforme-continua-edad)
+    - [12.2 Distribución de Poisson (frecuencia de visita)](#122-distribución-de-poisson-frecuencia-de-visita)
+    - [12.3 TLC y prueba de hipótesis (gasto)](#123-distribución-normal-teorema-del-límite-central-y-prueba-de-hipótesis-gasto-en-comida)
+13. [Conclusiones generales y recomendaciones](#13-conclusiones-generales-y-recomendaciones)
 
 ---
 
 ## 1. Introducción y objetivo
 
-El objetivo de este trabajo es **limpiar, estandarizar y explorar** una base de datos de clientes de restaurantes de Estados Unidos (`base_datos_restaurantes_USA_v2.csv`).
+El objetivo de este trabajo es **limpiar, estandarizar y explorar** una base de datos de clientes de restaurantes de Estados Unidos (`base_datos_restaurantes_USA_v2.csv`, **30 000 registros y 17 variables**) y, a partir de la base limpia, **calcular probabilidades y ajustar modelos estadísticos** que describan el comportamiento de los clientes.
 
-El trabajo se dividió en **cinco módulos**, uno por integrante, cada uno encargado de un grupo de variables:
+El trabajo tiene tres partes:
+
+| Parte | Contenido | Secciones |
+|---|---|---|
+| Fase I | Limpieza de datos, reconocimiento y gráficos descriptivos | 2 a 10 |
+| Fase II | Probabilidad clásica, condicional e independencia (ejercicios a – j) | 11 |
+| Etapa 3 | Distribución uniforme, Poisson, Teorema del Límite Central y prueba de hipótesis | 12 |
+
+La limpieza (Fase I) se dividió en **cinco módulos**, uno por integrante, cada uno encargado de un grupo de variables:
 
 | Integrante | Módulo | Variables |
 |---|---|---|
@@ -590,6 +609,8 @@ plt.show()
 | `tipo_de_pago_mas_usado` | Formato de texto inconsistente | `strip()` + `capitalize()` | Camilo |
 | `ingresos_mensuales` | Sin problemas (rango 800 – 17 999) | Sin cambios | Camilo |
 
+> **Nota:** las operaciones de estandarización de texto (`strip()`, `title()`, `capitalize()`) sobre nombres, género, ciudad, estrato y tipo de pago **no modificaron ningún valor**, porque la base v2 ya tenía esas categorías escritas de forma consistente. Igualmente, `consume_licor` y `membresia_premium` no tenían nulos. Estas líneas funcionan como **validación preventiva**: si llega una versión de la base con errores de formato, el flujo los corrige sin cambiar el código. En cambio, la normalización del teléfono sí transformó **13 691 de los 14 834** números registrados (solo 1 143 venían ya en formato `XXX-XXX-XXXX`).
+
 ### 9.1 Registros corregidos en la limpieza
 
 | Variable | Registros afectados | % de 30 000 | Valor de reemplazo |
@@ -603,7 +624,7 @@ plt.show()
 
 ---
 
-## 10. Conclusiones
+## 10. Conclusiones de la limpieza y el análisis exploratorio
 
 1. **Calidad de datos:** la base de 30 000 registros y 17 variables quedó **sin valores nulos** y con formatos consistentes (texto estandarizado, teléfonos en `XXX-XXX-XXXX`, edades y frecuencias dentro de rangos válidos).
 2. **Perfil de los clientes:** hay equilibrio de género (≈ 50 % y 50 %), las edades van de 18 a 80 años con una distribución casi uniforme, y la mayor concentración está en Chicago y NYC.
@@ -616,40 +637,174 @@ plt.show()
 
 ---
 
-### Interpretación de resultados – Fase II: Probabilidad
+## 11. Fase II: Probabilidad
 
-Las probabilidades se calcularon con la base ya limpia (N = 30.000 clientes) usando la definición clásica, P(A) = casos favorables / casos totales. Como se estiman a partir de una muestra, representan el comportamiento observado de los clientes y no un valor exacto de la población.
+Las probabilidades se calcularon con la base ya limpia (N = 30.000 clientes) usando la definición clásica. Como se estiman a partir de una muestra, representan el comportamiento observado de los clientes y no un valor exacto de la población.
 
-**a) Preferencia alimenticia.** La probabilidad de que un cliente elegido al azar sea vegetariano o prefiera carnes es del **53,00 %** (21,93 % vegetarianos y 31,06 % carnes). Se suman directamente porque son eventos mutuamente excluyentes: cada cliente tiene una única preferencia. Más de la mitad de la clientela se concentra en estas dos categorías, y el resto se reparte entre las demás preferencias de la base. Hay que tener en cuenta que en la limpieza los nulos de esta variable se imputaron con la moda ("Carnes"), lo que aumenta algo P(Carnes): con solo los datos válidos sería 27,68 %, y la unión bajaría a 50,69 %.
+### 11.1 Fórmulas utilizadas
 
-**b) Membresía.** La probabilidad de que un cliente tenga membresía Premium es del **42,82 %**. Casi 4 de cada 10 clientes ya participan en el programa de fidelización, lo que indica una adopción considerable.
+$$
+P(A) = \frac{n(A)}{N}
+\qquad\qquad
+P(A \mid B) = \frac{P(A \cap B)}{P(B)} = \frac{n(A \cap B)}{n(B)}
+$$
 
-**c) Consumo de licor.** La probabilidad de que un cliente consuma licor al visitar un restaurante es del **61,61 %**. Es la característica más frecuente entre las analizadas, por lo que la oferta de bebidas alcohólicas es un componente importante del negocio.
+$$
+P(A \cup B) = P(A) + P(B) - P(A \cap B)
+\qquad \text{(si } A \text{ y } B \text{ son excluyentes, } P(A \cap B) = 0\text{)}
+$$
 
-**d) Premium dado estrato Alto.** Si el cliente pertenece al estrato Alto, la probabilidad de que tenga membresía Premium sube a **69,71 %**, frente al 42,82 % del total de clientes. Esta diferencia indica que la membresía es mucho más frecuente en este estrato, de modo que el estrato Alto es un perfil clave para el programa de fidelización. Si se agruparan los estratos Alto y Muy Alto, la probabilidad sería del 79,35 %.
+$$
+A \text{ y } B \text{ son independientes} \iff P(A \cap B) = P(A)\,P(B) \iff P(A \mid B) = P(A)
+$$
 
-**e) Ingresos dado consumo de licor.** Entre quienes consumen licor, la probabilidad de que sus ingresos mensuales superen $5.000 es del **40,11 %**. Cerca de 4 de cada 10 consumidores de licor tienen ingresos superiores a ese umbral, así que el consumo de licor no se concentra solo en los clientes de mayores ingresos.
+Para confirmar la independencia (ejercicios g y h) se usó además la **prueba chi-cuadrado de independencia**, con $H_0$: las variables son independientes y $\alpha = 0{,}05$:
 
-**f) Mariscos dado género femenino.** La probabilidad de que una clienta prefiera la categoría Mariscos es del **17,10 %**. Esta probabilidad condicional sirve como referencia para diseñar la oferta de platos y las promociones dirigidas a este segmento.
+$$
+\chi^2 = \sum_{i}\sum_{j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}, \qquad E_{ij} = \frac{(\text{total fila } i)(\text{total columna } j)}{N}
+$$
 
-**g) Licor y estrato Alto.** Se verificó si P(Licor ∩ Alto) = P(Licor) × P(Alto). Los valores obtenidos fueron 0,18517 y 0,18561, prácticamente iguales. Además, P(Licor | Alto) = 61,46 % es casi idéntica a P(Licor) = 61,61 %, y la prueba chi-cuadrado (p = 0,970 > 0,05) no rechaza la independencia. Por tanto, **el consumo de licor es independiente del estrato socioeconómico**: saber que un cliente es de estrato Alto no cambia la probabilidad de que consuma licor.
+### 11.2 Resultados por ejercicio
 
-**h) Forma de pago y membresía.** La probabilidad de pagar principalmente con tarjeta es de 33,14 % entre los clientes Premium, 33,21 % entre los no Premium y 33,18 % en general. Las tres son casi iguales y la prueba chi-cuadrado (p = 0,912 > 0,05) no rechaza la independencia, por lo que **el uso de tarjeta no depende de tener membresía Premium**. La membresía no cambia el hábito de pago de los clientes.
+#### a) Preferencia alimenticia
 
-**i) Preferencia por Carnes o pago en Efectivo.** Estos eventos no son excluyentes, porque hay clientes que prefieren carnes y además pagan en efectivo (12,09 %). Por eso se resta la intersección para no contarla dos veces: P(C ∪ E) = 0,3106 + 0,3938 − 0,1209 = **58,35 %**.
+![Preferencia alimenticia](grafico_p2_a_preferencia.png)
 
-**j) Segmento de edad.** La probabilidad de que un cliente sea menor de 30 años es de 19,04 % y mayor de 65 años de 23,44 %. Como no pueden darse a la vez, se suman: **42,48 %**. Cerca del 42 % de la clientela está en los extremos de edad (jóvenes y adultos mayores), lo que vuelve relevante diseñar ofertas para ambos segmentos.
+La probabilidad de que un cliente elegido al azar sea vegetariano o prefiera carnes es del **53,00 %** (21,93 % vegetarianos y 31,06 % carnes). Se suman directamente porque son eventos mutuamente excluyentes: cada cliente tiene una única preferencia. Más de la mitad de la clientela se concentra en estas dos categorías, y el resto se reparte entre las demás preferencias de la base. Hay que tener en cuenta que en la limpieza los nulos de esta variable se imputaron con la moda ("Carnes"), lo que aumenta algo P(Carnes): con solo los datos válidos sería 27,68 %, y la unión bajaría a 50,69 %.
 
-#### Conclusión general
+$$
+P(V \cup C) = P(V) + P(C) = \frac{6\,580}{30\,000} + \frac{9\,319}{30\,000} = 0{,}2193 + 0{,}3106 = 0{,}5300
+$$
 
-La clientela se caracteriza por un alto consumo de licor (61,61 %) y una adopción importante de la membresía Premium (42,82 %), especialmente entre el estrato Alto (69,71 %). En cambio, el consumo de licor y el uso de tarjeta se comportan de forma independiente del estrato y de la membresía, respectivamente. Para el negocio, esto indica que las estrategias de fidelización deberían enfocarse en los perfiles de estrato alto, mientras que las decisiones sobre medios de pago o la oferta de licor no necesitan segmentarse por esas variables.
+#### b) Membresía Premium
+
+![Membresía Premium](grafico_p2_b_membresia.png)
+
+La probabilidad de que un cliente tenga membresía Premium es del **42,82 %**. Casi 4 de cada 10 clientes ya participan en el programa de fidelización, lo que indica una adopción considerable.
+
+$$
+P(\text{Premium}) = \frac{12\,845}{30\,000} = 0{,}4282
+$$
+
+#### c) Consumo de licor
+
+![Consumo de licor](grafico_p2_c_licor.png)
+
+La probabilidad de que un cliente consuma licor al visitar un restaurante es del **61,61 %**. Es la característica más frecuente entre las analizadas, por lo que la oferta de bebidas alcohólicas es un componente importante del negocio.
+
+$$
+P(L) = \frac{18\,483}{30\,000} = 0{,}6161
+$$
+
+#### d) Premium dado estrato Alto
+
+![Proporción de clientes Premium por estrato](grafico_p2_d_premium_estrato.png)
+
+Si el cliente pertenece al estrato Alto, la probabilidad de que tenga membresía Premium sube a **69,71 %**, frente al 42,82 % del total de clientes. Esta diferencia indica que la membresía es mucho más frecuente en este estrato, de modo que el estrato Alto es un perfil clave para el programa de fidelización. Si se agruparan los estratos Alto y Muy Alto, la probabilidad sería del 79,35 %. El gráfico muestra que la probabilidad de ser Premium **crece con el estrato**: 0,4 % en Bajo, 14,0 % en Medio, 69,7 % en Alto y 95,3 % en Muy Alto. Este resultado es clave para la Etapa 3 (sección 12.3).
+
+$$
+P(\text{Premium} \mid \text{Alto}) = \frac{n(\text{Premium} \cap \text{Alto})}{n(\text{Alto})} = \frac{6\,300}{9\,038} = 0{,}6971
+$$
+
+#### e) Ingresos dado consumo de licor
+
+![Ingresos de quienes consumen licor](grafico_p2_e_ingresos_licor.png)
+
+Entre quienes consumen licor, la probabilidad de que sus ingresos mensuales superen $5.000 es del **40,11 %**. Cerca de 4 de cada 10 consumidores de licor tienen ingresos superiores a ese umbral, así que el consumo de licor no se concentra solo en los clientes de mayores ingresos. De hecho, en toda la base P(Ingresos > 5.000) = 40,04 %, prácticamente igual: **el consumo de licor no depende del nivel de ingresos**, lo que coincide con el resultado del ejercicio g.
+
+$$
+P(I > 5\,000 \mid L) = \frac{7\,413}{18\,483} = 0{,}4011
+$$
+
+#### f) Mariscos dado género femenino
+
+![Preferencia alimenticia por género](grafico_p2_f_preferencia_genero.png)
+
+La probabilidad de que una clienta prefiera la categoría Mariscos es del **17,10 %**. En el gráfico se ve que los perfiles de hombres y mujeres son prácticamente iguales en todas las categorías (en hombres, P(Mariscos | Masculino) = 17,65 %), así que **el género no cambia la preferencia alimenticia**. Esta probabilidad sirve como referencia para la oferta de platos, pero no justifica promociones diferenciadas por género.
+
+$$
+P(\text{Mariscos} \mid \text{Femenino}) = \frac{2\,573}{15\,044} = 0{,}1710
+$$
+
+#### g) Independencia entre licor y estrato Alto
+
+![Consumo de licor por estrato](grafico_p2_g_licor_estrato.png)
+
+Se verificó si P(Licor ∩ Alto) = P(Licor) × P(Alto). Los valores obtenidos fueron 0,18517 y 0,18561, prácticamente iguales. Además, P(Licor | Alto) = 61,46 % es casi idéntica a P(Licor) = 61,61 %, y la prueba chi-cuadrado (p = 0,970 > 0,05) no rechaza la independencia. Por tanto, **el consumo de licor es independiente del estrato socioeconómico**: saber que un cliente es de estrato Alto no cambia la probabilidad de que consuma licor.
+
+$$
+P(L \cap A) = 0{,}18517 \;\approx\; P(L)\,P(A) = 0{,}6161 \times 0{,}3013 = 0{,}18561 \qquad \chi^2 = 0{,}244,\; gl = 3,\; p = 0{,}970
+$$
+
+#### h) Forma de pago y membresía
+
+![Uso de tarjeta según membresía](grafico_p2_h_tarjeta_membresia.png)
+
+La probabilidad de pagar principalmente con tarjeta es de 33,14 % entre los clientes Premium, 33,21 % entre los no Premium y 33,18 % en general. Las tres son casi iguales y la prueba chi-cuadrado (p = 0,912 > 0,05) no rechaza la independencia, por lo que **el uso de tarjeta no depende de tener membresía Premium**. La membresía no cambia el hábito de pago de los clientes.
+
+$$
+P(T \mid \text{Premium}) = 0{,}3314 \;\approx\; P(T \mid \text{No Premium}) = 0{,}3321 \;\approx\; P(T) = 0{,}3318 \qquad \chi^2 = 0{,}0123,\; gl = 1,\; p = 0{,}912
+$$
+
+#### i) Carnes o pago en Efectivo
+
+![Unión de eventos no excluyentes: Carnes o Efectivo](grafico_p2_i_carnes_efectivo.png)
+
+Estos eventos no son excluyentes, porque hay clientes que prefieren carnes y además pagan en efectivo (12,09 %). Por eso se resta la intersección para no contarla dos veces: P(C ∪ E) = 0,3106 + 0,3938 − 0,1209 = **58,35 %**. Además, si los dos eventos fueran independientes se esperaría P(C) × P(E) = 0,1223, muy cerca de la intersección observada (0,1209): la preferencia por carnes tampoco influye en el medio de pago.
+
+$$
+P(C \cup E) = P(C) + P(E) - P(C \cap E) = 0{,}3106 + 0{,}3938 - 0{,}1209 = 0{,}5835
+$$
+
+#### j) Segmento de edad
+
+![Segmentos de edad: menores de 30 y mayores de 65](grafico_p2_j_edad.png)
+
+La probabilidad de que un cliente sea menor de 30 años es de 19,04 % y mayor de 65 años de 23,44 %. Como no pueden darse a la vez, se suman: **42,48 %**. Cerca del 42 % de la clientela está en los extremos de edad (jóvenes y adultos mayores), lo que vuelve relevante diseñar ofertas para ambos segmentos.
+
+$$
+P(E < 30 \cup E > 65) = P(E<30) + P(E>65) = 0{,}1904 + 0{,}2344 = 0{,}4248
+$$
+
+### 11.3 Resumen de la Fase II
+
+| Ej. | Evento | Tipo | Resultado |
+|---|---|---|---|
+| a | Vegetariano ∪ Carnes | Unión de eventos excluyentes | 53,00 % |
+| b | Premium | Probabilidad simple | 42,82 % |
+| c | Consume licor | Probabilidad simple | 61,61 % |
+| d | Premium \| Alto | Condicional | 69,71 % |
+| e | Ingresos > 5.000 \| Licor | Condicional | 40,11 % |
+| f | Mariscos \| Femenino | Condicional | 17,10 % |
+| g | Licor y estrato Alto | Independencia | Independientes (p = 0,970) |
+| h | Tarjeta y Premium | Independencia | Independientes (p = 0,912) |
+| i | Carnes ∪ Efectivo | Unión de eventos no excluyentes | 58,35 % |
+| j | Edad < 30 ∪ Edad > 65 | Unión de eventos excluyentes | 42,48 % |
+
+### 11.4 Conclusión de la Fase II
+
+La clientela se caracteriza por un alto consumo de licor (61,61 %) y una adopción importante de la membresía Premium (42,82 %), especialmente entre el estrato Alto (69,71 %). El **estrato socioeconómico** es la variable que más diferencia a los clientes, porque la membresía Premium depende fuertemente de él. En cambio, el consumo de licor y el uso de tarjeta se comportan de forma independiente del estrato y de la membresía, respectivamente. Para el negocio, esto indica que las estrategias de fidelización deberían enfocarse en los perfiles de estrato alto, mientras que las decisiones sobre medios de pago o la oferta de licor no necesitan segmentarse por esas variables.
 
 
-## Etapa 3: Modelos de probabilidad
+---
 
-### 1. Distribución uniforme continua (edad)
+## 12. Etapa 3: Modelos de probabilidad
 
-Se modela la edad como X ~ U(18, 80), con densidad f(x) = 1/62 = 0,0161. La probabilidad de un intervalo es P(x₁ ≤ X ≤ x₂) = (x₂ − x₁)/62, calculada con la fórmula y con `scipy.stats.uniform` (ambos coinciden). La probabilidad real se obtuvo con `between()` sobre la columna `edad`.
+### 12.1 Distribución uniforme continua (edad)
+
+Se modela la edad como $X \sim U(a, b)$ con $a = 18$ y $b = 80$. La probabilidad de un intervalo se calculó con la fórmula y con `scipy.stats.uniform` (ambos coinciden), y la probabilidad real se obtuvo con `between()` sobre la columna `edad`.
+
+$$
+f(x) = \frac{1}{b-a} = \frac{1}{62} \approx 0{,}0161, \quad 18 \le x \le 80
+\qquad\qquad
+P(x_1 \le X \le x_2) = \frac{x_2 - x_1}{b - a}
+$$
+
+Los momentos teóricos del modelo coinciden con los de la base limpia (media 48,92 y desviación 18,07):
+
+$$
+E[X] = \frac{a+b}{2} = 49 \qquad\qquad \sigma = \frac{b-a}{\sqrt{12}} = \frac{62}{\sqrt{12}} \approx 17{,}90
+$$
 
 | Intervalo | Cálculo | P teórica | Clientes reales | P real | Diferencia |
 |---|---|---|---|---|---|
@@ -662,11 +817,23 @@ Se modela la edad como X ~ U(18, 80), con densidad f(x) = 1/62 = 0,0161. La prob
 
 **Por qué la real es ligeramente mayor.** La edad se registra en números enteros y `between()` incluye ambos extremos. En [25, 40] hay 16 edades posibles (25, 26, …, 40), pero el modelo continuo mide un ancho de 15. Al contar 16 de 63 edades posibles se obtiene 25,40 %, casi idéntico al 25,36 % observado. En [40, 60] influye además la limpieza: las 308 edades nulas o imposibles se rellenaron con un valor central, y por eso la edad 49 aparece 812 veces frente a un promedio de 476 por edad.
 
-**Conclusión.** El modelo uniforme se ajusta bien a la realidad (diferencias de 1 a 2,3 puntos porcentuales): ningún grupo de edad domina la clientela. **Para el negocio:** las campañas, el menú y la música no deben diseñarse para un solo grupo etario. Además, el modelo permite estimar el alcance de una promoción por edad; por ejemplo, una dirigida a jóvenes de 18 a 24 años llegaría a cerca del 10 % de los clientes.
+**Bondad de ajuste.** La prueba chi-cuadrado de uniformidad sobre las 63 edades da χ² = 294,2 con p = 6,6 × 10⁻³², así que formalmente **se rechaza la uniformidad exacta**. Sin embargo, con 30.000 datos la prueba detecta cualquier desviación pequeña, y la principal es el pico artificial de la edad 49 que dejó la limpieza.
 
-### 2. Distribución de Poisson (frecuencia de visita)
+**Conclusión.** El modelo uniforme se ajusta bien a la realidad como aproximación (diferencias de 1 a 2,3 puntos porcentuales): ningún grupo de edad domina la clientela. **Para el negocio:** las campañas, el menú y la música no deben diseñarse para un solo grupo etario. Además, el modelo permite estimar el alcance de una promoción por edad; por ejemplo, una dirigida a jóvenes de 18 a 24 años llegaría a cerca del 10 % de los clientes.
 
-Se estima λ con la media muestral: **λ = 4,2571 visitas al mes**. Se usa la función de masa P(X = k) = e^(−λ) λ^k / k! y, para "más de 8", la regla del complemento: P(X > 8) = 1 − P(X ≤ 8) = 1 − 0,9700.
+### 12.2 Distribución de Poisson (frecuencia de visita)
+
+Se modela $X$ = número de visitas al mes como $X \sim \text{Poisson}(\lambda)$, y se estima λ con la media muestral: **λ = 4,2571 visitas al mes**. Para "más de 8" se usa la regla del complemento.
+
+$$
+P(X = k) = \frac{e^{-\lambda}\,\lambda^{k}}{k!}
+\qquad\qquad
+P(X = 2) = \frac{e^{-4{,}2571}\,(4{,}2571)^2}{2!} = 0{,}1283
+$$
+
+$$
+P(X > 8) = 1 - P(X \le 8) = 1 - \sum_{k=0}^{8} \frac{e^{-\lambda}\lambda^{k}}{k!} = 1 - 0{,}9700 = 0{,}0300
+$$
 
 | Evento | P teórica (Poisson) | Clientes reales | P real |
 |---|---|---|---|
@@ -676,15 +843,31 @@ Se estima λ con la media muestral: **λ = 4,2571 visitas al mes**. Se usa la fu
 ![Poisson: frecuencia de visitas observada vs modelo, P(X=2) y P(X>8)](grafico_p3_b_poisson.png)
 
 
-**Evaluación del ajuste.** Una Poisson exige que media y varianza sean iguales; aquí la media es 4,26 y la varianza 4,93 (índice de dispersión 1,16), es decir, los datos están algo más dispersos de lo que el modelo supone. En el centro el modelo funciona bien (diferencia de 0,64 puntos en P(X = 2)), pero **subestima la cola derecha**: predice 3,00 % de clientes con más de 8 visitas y en la realidad hay 5,72 %, casi el doble. La razón es que en los datos las visitas 7, 8, 9 y 10 pesan casi lo mismo (alrededor de 2,9 % cada una), mientras que en la Poisson la probabilidad cae rápidamente. También hay un exceso de clientes con 0 visitas (4,88 % real frente a 1,42 % del modelo): son 1.463 registros que además tienen gasto 0 y son de estrato Bajo. La prueba chi-cuadrado rechaza el ajuste exacto (p ≈ 0), aunque con 30.000 registros cualquier desviación pequeña resulta significativa. Por tanto, el modelo se ajusta **de forma aproximada**.
+**Evaluación del ajuste.** Una Poisson exige que media y varianza sean iguales ($E[X] = \operatorname{Var}(X) = \lambda$). Aquí:
+
+$$
+\text{Índice de dispersión} = \frac{s^2}{\bar{x}} = \frac{4{,}9338}{4{,}2571} = 1{,}159 > 1
+$$
+
+Es decir, los datos están algo más dispersos de lo que el modelo supone. En el centro el modelo funciona bien (diferencia de 0,64 puntos en P(X = 2)), pero **subestima la cola derecha**: predice 3,00 % de clientes con más de 8 visitas y en la realidad hay 5,72 %, casi el doble. La razón es que en los datos las visitas 7, 8, 9 y 10 pesan casi lo mismo (alrededor de 2,9 % cada una), mientras que en la Poisson la probabilidad cae rápidamente. También hay un exceso de clientes con 0 visitas (4,88 % real frente a 1,42 % del modelo): son 1.463 registros que además tienen gasto 0 y son de estrato Bajo. La prueba chi-cuadrado de bondad de ajuste (χ² = 5.196,4; gl = 9) rechaza el ajuste exacto (p ≈ 0), aunque con 30.000 registros cualquier desviación pequeña resulta significativa. Por tanto, el modelo se ajusta **de forma aproximada**.
 
 **Para el negocio.** Sirve para estimar la demanda típica y planear personal, inventario y reservas. No debe usarse para dimensionar los picos: los clientes muy frecuentes (más de 8 visitas al mes, 5,7 % de la base) son casi el doble de lo que prevé el modelo, así que conviene tratarlos como un segmento propio en los programas de fidelización y tener margen de inventario.
 
-### 3. Distribución normal, Teorema del Límite Central y prueba de hipótesis (gasto en comida)
+### 12.3 Distribución normal, Teorema del Límite Central y prueba de hipótesis (gasto en comida)
 
-**Hipótesis (prueba unilateral derecha, α = 0,05):**
-- H₀: μ_Premium − μ_NoPremium ≤ 0
-- H₁: μ_Premium − μ_NoPremium > 0
+**Pregunta:** ¿los clientes con membresía Premium gastan más por visita que los clientes sin membresía?
+
+**Hipótesis (prueba unilateral derecha):**
+
+$$
+H_0:\; \mu_{\text{Premium}} - \mu_{\text{No Premium}} \le 0 \quad \text{(el programa no aumenta el gasto)}
+$$
+
+$$
+H_1:\; \mu_{\text{Premium}} - \mu_{\text{No Premium}} > 0 \quad \text{(los Premium gastan más)}
+$$
+
+**Nivel de significancia:** $\alpha = 0{,}05$ → valor crítico $z_{0{,}95} = 1{,}645$. Se rechaza $H_0$ si el estadístico supera 1,645 o, de forma equivalente, si el p-valor es menor que 0,05.
 
 | Grupo | n | Media | Desv. estándar | Varianza | Asimetría |
 |---|---|---|---|---|---|
@@ -696,9 +879,29 @@ La varianza Premium es 3,28 veces la del otro grupo (Levene: p ≈ 0), así que 
 ![TLC: gasto individual y medias de 1000 muestras de n=50, Premium y No Premium](grafico_p3_c1_tlc.png)
 
 
-**Teorema del Límite Central.** El gasto individual no es normal (asimetría de 0,91 y 1,48). Se simularon 1.000 muestras aleatorias de n = 50 en cada grupo: la asimetría de las medias muestrales baja a −0,02 (Premium) y 0,24 (No Premium), y el error estándar simulado (4,14 y 2,37) coincide con el teórico σ/√n (4,19 y 2,32). Los promedios forman campanas normales aunque los datos individuales no lo sean, lo que valida usar métodos basados en la normal.
+**Teorema del Límite Central.** Para muestras de tamaño $n$ suficientemente grande, la media muestral se distribuye aproximadamente normal, sin importar la forma de la población:
 
-**Estadísticos de prueba:**
+$$
+\bar{X}_n \;\approx\; N\!\left(\mu,\; \frac{\sigma^2}{n}\right)
+\qquad\Longleftrightarrow\qquad
+Z = \frac{\bar{X}_n - \mu}{\sigma/\sqrt{n}} \;\approx\; N(0, 1)
+$$
+
+El gasto individual no es normal (asimetría de 0,91 y 1,48). Se simularon 1.000 muestras aleatorias de n = 50 en cada grupo: la asimetría de las medias muestrales baja a −0,02 (Premium) y 0,24 (No Premium), y el error estándar simulado (4,14 y 2,37) coincide con el teórico σ/√n (4,19 y 2,32). Los promedios forman campanas normales aunque los datos individuales no lo sean, lo que valida usar métodos basados en la normal.
+
+**Estadístico de prueba (t de Welch)** y sus grados de libertad (Welch–Satterthwaite):
+
+$$
+t = \frac{\bar{x}_1 - \bar{x}_2}{\sqrt{\dfrac{s_1^2}{n_1} + \dfrac{s_2^2}{n_2}}}
+= \frac{47{,}39 - 21{,}47}{\sqrt{\dfrac{878{,}70}{12\,845} + \dfrac{268{,}17}{17\,155}}}
+= \frac{25{,}91}{0{,}2899} \approx 89{,}39
+$$
+
+$$
+gl = \frac{\left(\dfrac{s_1^2}{n_1} + \dfrac{s_2^2}{n_2}\right)^2}{\dfrac{(s_1^2/n_1)^2}{n_1 - 1} + \dfrac{(s_2^2/n_2)^2}{n_2 - 1}} \approx 18\,655
+$$
+
+**Comparación de estadísticos:**
 
 | Prueba | Estadístico | Grados de libertad | Valor crítico (α = 0,05) | p-valor | Decisión |
 |---|---|---|---|---|---|
@@ -714,9 +917,21 @@ La varianza Premium es 3,28 veces la del otro grupo (Levene: p ≈ 0), así que 
 2. Los tamaños muestrales son desiguales (12.845 frente a 17.155), lo que agrava ese problema.
 3. Las varianzas poblacionales son desconocidas. El estadístico Z exige conocerlas; aquí coincide con Welch solo porque las muestras son muy grandes.
 
-**Decisión.** El p-valor es prácticamente 0, muy inferior a 0,05: **se rechaza H₀**. Los clientes Premium gastan en promedio más por visita ($47,39 frente a $21,47). La diferencia es de **$25,91** (IC 95 %: $25,34 a $26,48), con un tamaño del efecto grande (d de Cohen = 1,08). El resultado no cambia al excluir los 145 gastos imputados (t = 89,47) ni con la prueba no paramétrica de Mann-Whitney.
+**Decisión.** El p-valor es prácticamente 0, muy inferior a 0,05: **se rechaza H₀**. Los clientes Premium gastan en promedio más por visita ($47,39 frente a $21,47). La diferencia es de **$25,91** (IC 95 %: $25,34 a $26,48), con un tamaño del efecto grande (d de Cohen = 1,08):
 
-**Advertencia clave: confusión por el estrato socioeconómico.** En la Etapa 2 se encontró que la membresía depende fuertemente del estrato: el **89,66 %** de los clientes Premium son de estrato Alto o Muy Alto. Como el estrato también determina cuánto se gasta, la comparación anterior mezcla el efecto de la membresía con el del nivel socioeconómico. Al comparar dentro de cada estrato:
+$$
+\text{IC}_{95\%} = (\bar{x}_1 - \bar{x}_2) \pm 1{,}96\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}} = 25{,}91 \pm 0{,}57
+\qquad
+d = \frac{\bar{x}_1 - \bar{x}_2}{\sqrt{(s_1^2 + s_2^2)/2}} = 1{,}08
+$$
+
+ El resultado no cambia al excluir los 145 gastos imputados (t = 89,47) ni con la prueba no paramétrica de Mann-Whitney.
+
+**Advertencia clave: confusión por el estrato socioeconómico.**
+
+> **Aclaración:** aquí "confusión" no se refiere a una *matriz de confusión* de un modelo de clasificación. Se refiere a una **variable de confusión**: una tercera variable (el estrato) que está relacionada a la vez con la membresía y con el gasto, y que puede hacer parecer que la membresía causa el mayor gasto.
+
+ En la Etapa 2 se encontró que la membresía depende fuertemente del estrato: el **89,66 %** de los clientes Premium son de estrato Alto o Muy Alto. Como el estrato también determina cuánto se gasta, la comparación anterior mezcla el efecto de la membresía con el del nivel socioeconómico. Al comparar dentro de cada estrato:
 
 | Estrato | n Premium | n No Premium | Gasto Premium | Gasto No Premium | Diferencia | p-valor |
 |---|---|---|---|---|---|---|
@@ -725,6 +940,14 @@ La varianza Premium es 3,28 veces la del otro grupo (Levene: p ≈ 0), así que 
 | Alto | 6.300 | 2.738 | $38,13 | $37,89 | +$0,24 | 0,29 |
 | Muy Alto | 5.217 | 259 | $64,38 | $61,99 | +$2,39 | 0,14 |
 
+La diferencia ajustada se calcula como el promedio de las diferencias dentro de cada estrato, ponderado por el peso $w_k = N_k / N$ de cada estrato:
+
+$$
+\hat{\Delta}_{\text{ajustada}} = \sum_{k=1}^{4} w_k\,\left(\bar{x}_{\text{Premium},k} - \bar{x}_{\text{No Premium},k}\right) = \$0{,}79
+\qquad
+1 - \frac{0{,}79}{25{,}91} \approx 97\,\%
+$$
+
 La diferencia ajustada por estrato es de solo **$0,79** (IC 95 %: −$0,18 a $1,75; p = 0,055): el estrato explica cerca del 97 % de la diferencia observada. La única diferencia estadísticamente significativa es la del estrato Medio, y es de apenas $0,72.
 
 ![Confusión por estrato: gasto por estrato y diferencia cruda vs ajustada](grafico_p3_c3_confusion_estrato.png)
@@ -732,6 +955,22 @@ La diferencia ajustada por estrato es de solo **$0,79** (IC 95 %: −$0,18 a $1,
 **Conclusión de negocio.** Los clientes Premium gastan mucho más, pero la mayor parte de esa diferencia refleja *quiénes* se hacen Premium (clientes de estratos altos que ya gastaban más), y no un efecto propio de la membresía. Con estos datos observacionales no se puede afirmar que el programa de fidelización *cause* un mayor gasto. Se recomienda al equipo de marketing no atribuirle al programa los $26 de diferencia, evaluar su efectividad comparando clientes del mismo estrato o con una prueba controlada (por ejemplo, ofrecer la membresía de forma aleatoria dentro de cada estrato), y concentrar la captación donde la membresía es poco frecuente, como el estrato Medio.
 
 ---
+## 13. Conclusiones generales y recomendaciones
 
+1. **Calidad de los datos:** la base quedó completa y consistente sin eliminar registros. Los sesgos de la imputación (pico en la edad 49 e inflación de Carnes) están identificados.
+2. **El estrato es la variable que más diferencia a los clientes:** la probabilidad de ser Premium pasa de 0,4 % en el estrato Bajo a 95,3 % en Muy Alto, y el gasto por visita crece con el estrato.
+3. **Hábitos transversales:** el consumo de licor (61,61 %), la preferencia alimenticia y el medio de pago no dependen del estrato, del género, de los ingresos ni de la membresía.
+4. **Modelos:** la edad se aproxima a una U(18, 80) y la frecuencia de visita a una Poisson(4,26), aunque esta subestima a los clientes muy frecuentes (5,72 % reales frente a 3,00 % del modelo).
+5. **Prueba de hipótesis:** los Premium gastan $25,91 más por visita (p ≈ 0), pero el estrato explica cerca del 97 % de esa diferencia. No se puede afirmar que la membresía *cause* el mayor gasto.
+
+**Recomendaciones para los restaurantes:**
+
+- **Fidelización:** concentrar la captación de nuevos Premium en el **estrato Medio** (31,1 % de los clientes, solo 14,0 % Premium) y medir el efecto real del programa comparando clientes del mismo estrato.
+- **Oferta:** mantener una carta de licores homogénea en todos los locales y reforzar las opciones vegetarianas y veganas (32,8 % sumadas), además de Carnes.
+- **Pagos:** conservar la operación en efectivo (39,4 %) y consolidar el pago por app (25,6 %). El pago con criptomonedas (1,85 %) no justifica una inversión específica.
+- **Operación:** planear personal e inventario con λ ≈ 4,26 visitas al mes, dejando margen para el 5,7 % de clientes con más de 8 visitas.
+- **Datos:** hacer una campaña de actualización de contactos (≈ 50 % sin teléfono ni correo) y validar los 1.463 registros con gasto y frecuencia en 0.
+
+---
 
 *Fin del documento.*
